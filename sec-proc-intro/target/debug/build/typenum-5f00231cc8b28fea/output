@@ -1,0 +1,2 @@
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/cnarayan/Github/mls/openmls/sec-proc-intro/target/debug/build/typenum-5f00231cc8b28fea/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/Users/cnarayan/Github/mls/openmls/sec-proc-intro/target/debug/build/typenum-5f00231cc8b28fea/out/op.rs
