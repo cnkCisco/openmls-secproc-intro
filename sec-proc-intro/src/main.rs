@@ -55,12 +55,27 @@ fn generate_key_package_bundle(
     Ok(key_package_bundle.into_parts().0)
 }
 
+fn generate_authorized_subscribers_list()-> Vec<SignaturePublicKey> {
+	let mut auth_keys = Vec::new();
+	return auth_keys;
+}
 
+fn extract_public_key_from_key_package(key_package: &KeyPackage)->SignaturePublicKey {
+	let credential = key_package.credential();
+	credential.signature_key().clone()
+}
+
+//Verify if public key of user is an authorized one
+fn is_authorized_user(auth_keys: &Vec<SignaturePublicKey>, other_pk: &SignaturePublicKey) -> bool {
+	auth_keys.contains(other_pk)
+}
 
 fn main() {
         println!("Generate signed keys");
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
         let backend = &OpenMlsRustCrypto::default();
+
+	let mut authorized_subscribers_keys = generate_authorized_subscribers_list();
 	// First they need credentials to identify them
 	let alice_credential = generate_credential_bundle(
 	    "Alice".into(),
@@ -69,7 +84,15 @@ fn main() {
     	     backend,
 	)
 	.expect("An unexpected error occurred.");
+	let alice_pk = alice_credential.signature_key().clone();
+	authorized_subscribers_keys.push(alice_pk);
+	// Generate KeyPackages
+        let alice_key_package = generate_key_package_bundle(&[ciphersuite], &alice_credential, backend)
+        .expect("An unexpected error occurred.");
 
+
+
+	//Bob'sKeyPackage is generated here for testing. Ideally, this should come from UI
 	let bob_credential = generate_credential_bundle(
     		"Bob".into(),
     		CredentialType::Basic,
@@ -77,17 +100,19 @@ fn main() {
     		backend,
 	)
 	.expect("An unexpected error occurred.");
-
-// Then they generate key packages to facilitate the asynchronous handshakes
-// in MLS
-
-// Generate KeyPackages
-	let alice_key_package = generate_key_package_bundle(&[ciphersuite], &alice_credential, backend)
-    	.expect("An unexpected error occurred.");
-
+	let bob_pk = bob_credential.signature_key().clone();
+	authorized_subscribers_keys.push(bob_pk);
 	let bob_key_package = generate_key_package_bundle(&[ciphersuite], &bob_credential, backend)
     	.expect("An unexpected error occurred.");
 
+
+//Extract bob's public key from his keypackage and verify
+	let bob_public_key = extract_public_key_from_key_package(&bob_key_package);
+	let is_bob_authorized =	is_authorized_user(&authorized_subscribers_keys, &bob_public_key);
+	match is_bob_authorized {
+		true => println!("Authorized user"),
+		false => println!("Unauthorized user"),
+	}
 // Now Alice starts a new group ...
 	let mut alice_group = MlsGroup::new(
 		backend,
